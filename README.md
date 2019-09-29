@@ -11,15 +11,17 @@ nimble install passgen
 ### Example
 
 ```nim
+    # 24 character-long password,
+    # inluding letters, numbers and special characters
     let pg = newPassGen(passlen = 24)
-    for i in 1..5:
-        echo "Long: ", pg.getPassword()
+    echo "Long: ", pg.getPassword()
 
-    let pg = newPassGen(passlen = 8, flags={fUpper, fLower, fDigits})
-    for i in 1..5:
-        echo "Short: ", pg.getPassword()
+    # 8 character-long password,
+    # inluding letters and numbers only (no special characters)
+    pg = newPassGen(passlen = 8, flags={fUpper, fLower, fDigits})
+    echo "Short: ", pg.getPassword()
 
-    let pg = newPassGen(passlen = 4, flags={fDigits})
-    for i in 1..5:
-        echo "PIN: ", pg.getPassword()        
+    # 4 character-long numerical PIN
+    pg = newPassGen(passlen = 4, flags={fDigits})
+    echo "PIN: ", pg.getPassword()
 ```
