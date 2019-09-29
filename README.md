@@ -8,20 +8,28 @@ Password generation library in Nim
 nimble install passgen
 ```
 
+### OS Support
+
+| OS      | Version              | Status         |
+|---------|----------------------|----------------|
+| OSX     | Mojave (10.14.6 )    | Tested & works |
+| Linux   | Ubuntu (18.04.3 LTS) | Tested & works |
+| Windows |                      | Not tested     |
+
 ### Example
 
 ```nim
-    # 24 character-long password,
-    # inluding letters, numbers and special characters
-    let pg = newPassGen(passlen = 24)
-    echo "Long: ", pg.getPassword()
+# 24 character-long password,
+# inluding letters, numbers and special characters
+let pg = newPassGen(passlen = 24)
+echo "Long: ", pg.getPassword()
 
-    # 8 character-long password,
-    # inluding letters and numbers only (no special characters)
-    pg = newPassGen(passlen = 8, flags={fUpper, fLower, fDigits})
-    echo "Short: ", pg.getPassword()
+# 8 character-long password,
+# inluding letters and numbers only (no special characters)
+pg = newPassGen(passlen = 8, flags={fUpper, fLower, fDigits})
+echo "Short: ", pg.getPassword()
 
-    # 4 character-long numerical PIN
-    pg = newPassGen(passlen = 4, flags={fDigits})
-    echo "PIN: ", pg.getPassword()
+# 4 character-long numerical PIN
+pg = newPassGen(passlen = 4, flags={fDigits})
+echo "PIN: ", pg.getPassword()
 ```
