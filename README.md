@@ -14,7 +14,7 @@ nimble install passgen
 
 | OS      | Version              | Status         |
 |---------|----------------------|----------------|
-| OSX     | Mojave (10.14.6 )    | Tested & works |
+| MacOS   | Catalina (10.15.3)   | Tested & works |
 | Linux   | Ubuntu (18.04.3 LTS) | Tested & works |
 | Windows |                      | Not tested     |
 
