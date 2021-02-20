@@ -10,14 +10,6 @@ Password generation library in Nim
 nimble install passgen
 ```
 
-### OS Support
-
-| OS      | Version              | Status         |
-|---------|----------------------|----------------|
-| MacOS   | Catalina (10.15.3)   | Tested & works |
-| Linux   | Ubuntu (18.04.3 LTS) | Tested & works |
-| Windows |                      | Not tested     |
-
 ### Example
 
 ```nim

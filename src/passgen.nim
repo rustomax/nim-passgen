@@ -1,18 +1,18 @@
-## Password generation library in Nim.
-##
-## Passgen uses `urand` [library](https://github.com/matceporial/nim-urand),
-## to generate randomness, although this may change in the future,
-## as higher quality random number generators become available in Nim.
+## Cross-platform password generation library in Nim.
+## 
+## * [GitHub Repo](https://github.com/rustomax/nim-passgen)
+## * Used by [npg](https://github.com/rustomax/npg) - Nim Password Generator, command-line password generation utility
+## * Random number generator provided by the excellent [nimcrypto](https://github.com/cheatfate/nimcrypto) library
 ##
 ## Generated passwords conform to a schema, based on parameters passed
 ## to `newPassGen()` function. Currently two parameters are available:
-## * password length `passlen = x`, where `x` is a non-negative integer
-## * sets of characters `flags = set[CFlag]` used in generated passwords.
-##   3 distinct sets are supported:
+## * Password length `passlen = x`, where `x` is an integer between 4 and 1024
+## * Flags specifying which sets of characters are used in generated passwords.
+##   4 character sets are supported:
 ##   * `fUpper` - ASCII uppercase letters: `A .. Z`
 ##   * `fLower` - ASCII lowercase letters: `a .. z`
 ##   * `fDigits` - Digits: `0 .. 9`
-##   * `fSpecial` - "password-friendly" special characters: `! @ # $ %`
+##   * `fSpecial` - "password-friendly" special characters: `! # $ % @ = ^ * + -`
 ##
 ## **Example:**
 ## 
@@ -28,7 +28,7 @@
 ##   let pg = newPassGen(passlen = 4, flags={fDigits})
 ##   echo pg.getPassword()
 
-import urand, strutils, tables
+import nimcrypto, strutils
 
 type
     CFlag* = enum
@@ -40,30 +40,38 @@ type
     PasswordGenerator* = object
         passLen: int
         flags: set[CFlag]
-        chars: string
 
-    ArgumentException* = object of Exception
+    ArgumentException* = object of ValueError
 
 const
     ## Flag set including all available characters
     allFlags = {fUpper, fLower, fDigits, fSpecial}
 
-    ## Map of flags to character sets
-    charSets = {
-        fUpper: "ABCDEFGHIJKLMNOPQRSTUVWXYZ",
-        fLower: "abcdefghijklmnopqrstuvwxyz",
-        fDigits: "0123456789".repeat(3),
-        fSpecial: "!#$%@".repeat(5)
-    }.toTable
+    # default random byte buffer length
+    bufferLen = 2048
 
+    # password length boundaries
+    minPassLen = 4
+    maxPassLen = 1024
 
-proc flagsToChars(flags: set[CFlag]): string =
-    ## Returns a signle string, containing all
-    ## character sets, referenced by a set of flags.
-    for flag in flags:
-        for c in charSets[flag]:
-            result &= c
+    # ASCII range of characters
+    bottomAscii = 33
+    topAscii = 127
 
+    # Password-friendly special characters
+    specialChars = {'!', '#', '$', '%', '@', '=', '^', '*', '+', '-'}
+
+proc getRandomAscii(): string =
+    ## Returns a variable length ASCII string of randomly generated characters
+    
+    var buffer: array[bufferLen, uint8]
+    let count = randomBytes(addr buffer[0], bufferLen - 1)
+
+    result = ""
+
+    for i in 0..count:
+        if buffer[i] >= bottomAscii and buffer[i] <= topAscii:
+            result &= $char(buffer[i])
 
 proc newPassGen*(passlen: int = 16, flags: set[CFlag] = allFlags): PasswordGenerator =
     ## Creates and initializes a new password generator for specific set of parameters
@@ -85,8 +93,14 @@ proc newPassGen*(passlen: int = 16, flags: set[CFlag] = allFlags): PasswordGener
     ##   # - passwords will include uppercase and lowercase letters
     ##   #   and no special characters
     ##   let pg = newPassGen(passlen = 24, flags = {fLower, fUpper, fDigits})
+    ## 
+    ## **Caveat 1:**
     ##
-    ## **Caveat:**
+    ## Minimum and maximum password length is set `4` and `1024` characters respectively.
+    ## Boundary checking is in general a good thing; plus I don't see a practical
+    ## use-case where a password or a numerical pin length would fall outside of these parameters. 
+    ##
+    ## **Caveat 2:**
     ##
     ## When more than one character set are specified in the `flags` parameter,
     ## there is no *guarantee* that characters from a particular set will actually appear
@@ -96,23 +110,18 @@ proc newPassGen*(passlen: int = 16, flags: set[CFlag] = allFlags): PasswordGener
     ## indicates to the password generator that special characters *may* be included in the password.
     ## This is especially true for shorter passwords (i.e. 8 characters-long).
     ##
-    ## If you omit the `flags` parameter, the default,
-    ## containing all character sets will be used. In other words, the following 2 blocks are identical:
+    ## If the `flags` argument is omitted or is explicitly empty (`flags = {}`), all character sets will be included.
+    ## In other words, the following blocks are identical:
     ##
     ## .. code-block:: Nim
-    ##   # These two blocks mean exactly the same thing
+    ##   # These three blocks mean exactly the same thing
     ##   block:
     ##       let pg = newPassGen(flags = {fLower, fUpper, fDigits, fSpecial})
     ##   block:
+    ##       let pg = newPassGen(flags = {})
+    ##   block:
     ##       let pg = newPassGen()
     ##    
-    ## However, explicitly passing an empty flag set `flags = {}` is not allowed
-    ## and will raise an `ArgumentException` error
-    ##
-    ## .. code-block:: Nim
-    ##   # This will raise an error
-    ##   let pg = newPassGen(flags = {})
-    ##
     ## Mutable password generator variable can be reinitialized with a new set of parameters.
     ##
     ## **Example:**
@@ -138,19 +147,18 @@ proc newPassGen*(passlen: int = 16, flags: set[CFlag] = allFlags): PasswordGener
     ##   # Generating 12 character-long passwords,
     ##   # containing only letters and digits (no special characters)
 
-    # Santity checks on arguments
-    if passlen < 1:
+    # Argument sanity checks
+    if passlen < minPassLen or passlen > maxPassLen:
         raise newException(ArgumentException, "invalid argument passlen: " & $passlen)
-    if flags == {}:
-        raise newException(ArgumentException, "invalid argument flags: " & $flags)
-
+    
     result.passLen = passlen
-    result.flags = flags
-    result.chars = flagsToChars(flags)
-
+    if flags == {}:
+        result.flags = allFlags
+    else:
+        result.flags = flags        
 
 proc getPassword*(generator: PasswordGenerator): string =
-    ## Returns a new random password
+    ## Returns a new (set) of randomly generated password(s)
     ##
     ## **Example:**
     ##
@@ -160,14 +168,18 @@ proc getPassword*(generator: PasswordGenerator): string =
     ##   var pg = newPassGen(passlen = 32, flags = {fLower, fUpper, fDigits})
     ##   for i in 1..5:
     ##      echo pg.getPassword()
-    var ur: Urand
-    ur.open()
 
-    var currLen = 0
-    while currLen < generator.passLen:
-        let c = ur.urand(1)[0].int
-        if c < generator.chars.len:
-            result.add generator.chars[c]
-            currLen += 1
-
-    ur.close()
+    result = ""
+    while result.len < generator.passLen:
+        let rawChars = getRandomAscii()
+        for i in 0..rawChars.len - 1:
+            if generator.flags.contains(fLower) and isLowerAscii(rawChars[i]):
+                result &= rawChars[i]
+            if generator.flags.contains(fUpper) and isUpperAscii(rawChars[i]):
+                result &= rawChars[i]
+            if generator.flags.contains(fDigits) and isDigit(rawChars[i]):
+                result &= rawChars[i]
+            if generator.flags.contains(fSpecial) and specialChars.contains(rawChars[i]):
+                result &= rawChars[i]
+            if result.len >= generator.passLen:
+                return

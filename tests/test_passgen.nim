@@ -16,7 +16,7 @@ test "custom generator returns expected set of characters":
     let generator = newPassGen(passlen = 1000, flags = {fUpper, fLower, fDigits})
     check generator.getPassword().contains({'A'..'z'}) == true
     check generator.getPassword().contains({'0'..'9'}) == true
-    check generator.getPassword().contains({'!', '@', '#', '$', '%'}) == false
+    check generator.getPassword().contains({'!', '#', '$', '%', '@', '=', '^', '*', '+', '-'}) == false
 
 test "zero password length raises exception":
     expect ArgumentException:
@@ -25,10 +25,6 @@ test "zero password length raises exception":
 test "negative password length raises exception":
     expect ArgumentException:
         discard newPassGen(passlen = -10)
-
-test "empty flags raise exception":
-    expect ArgumentException:
-        discard newPassGen(flags = {})
 
 test "can reinitialize mutable generator with a new set of arguments":
     var pg = newPassGen(passlen = 20)
