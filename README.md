@@ -1,8 +1,6 @@
 # nim-passgen
 Password generation library in Nim
 
-[![Build Status](https://travis-ci.org/rustomax/nim-passgen.svg?branch=master)](https://travis-ci.org/rustomax/nim-passgen)
-
 * [Full documentation](https://rustomax.github.io/dev/nim/passgen/passgen.html)
 
 ### Installation
